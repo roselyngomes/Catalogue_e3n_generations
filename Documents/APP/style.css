@@ -1,0 +1,142 @@
+/* =========================================================
+   E3N-GENERATIONS - STYLE GLOBAL
+   ========================================================= */
+
+:root {
+    --e3n-blue: #005b8f;
+    --e3n-dark: #003f63;
+    --e3n-light: #f4f8fb;
+    --e3n-grey: #e8edf2;
+}
+
+/* =========================================================
+   GENERAL
+   ========================================================= */
+
+.main {
+    background-color: white;
+}
+
+.block-container {
+    padding-top: 1rem;
+}
+
+/* =========================================================
+   TITRES
+   ========================================================= */
+
+h1 {
+    color: var(--e3n-blue);
+    font-weight: 700;
+}
+
+h2 {
+    color: var(--e3n-blue);
+}
+
+h3 {
+    color: var(--e3n-blue);
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+section[data-testid="stSidebar"] {
+    background-color: #f8fbfd;
+}
+
+/* =========================================================
+   BOUTONS
+   ========================================================= */
+
+.stButton > button {
+
+    background-color: var(--e3n-blue);
+
+    color: white;
+
+    border-radius: 12px;
+
+    border: none;
+
+    font-weight: 600;
+
+    min-height: 45px;
+}
+
+.stButton > button:hover {
+
+    background-color: var(--e3n-dark);
+
+    color: white;
+}
+
+/* =========================================================
+   CARTES QUESTIONNAIRES
+   ========================================================= */
+
+.questionnaire-card {
+
+    border-left: 6px solid var(--e3n-blue);
+
+    background-color: white;
+
+    padding: 15px;
+
+    margin-top: 10px;
+
+    margin-bottom: 10px;
+
+    border-radius: 10px;
+
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.08);
+}
+
+/* =========================================================
+   BLOCS SOUS-THEMES
+   ========================================================= */
+
+.sstheme-card {
+
+    background-color: white;
+
+    border: 1px solid var(--e3n-grey);
+
+    border-radius: 12px;
+
+    padding: 15px;
+
+    text-align: center;
+
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.08);
+}
+
+/* =========================================================
+   METRICS
+   ========================================================= */
+
+[data-testid="stMetricValue"] {
+
+    color: var(--e3n-blue);
+
+    font-weight: bold;
+}
+
+/* =========================================================
+   DATAFRAME
+   ========================================================= */
+
+[data-testid="stDataFrame"] {
+
+    border-radius: 10px;
+}
+
+/* =========================================================
+   INFO
+   ========================================================= */
+
+.stAlert {
+
+    border-radius: 10px;
+}
