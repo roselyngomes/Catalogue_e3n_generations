@@ -344,7 +344,8 @@ with questionnaires:
         if pd.notna(ligne["url_pdf"]):
 
             st.components.v1.iframe(
-                ligne["url_pdf"],
+                ligne["url_pdf"]
+                ++ ligne["pdf_file"],
                 height=900
             )
         
