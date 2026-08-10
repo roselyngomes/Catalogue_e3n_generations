@@ -343,12 +343,11 @@ with questionnaires:
 
         if pd.notna(ligne["url_pdf"]):
 
-            st.components.v1.iframe(
-                ligne["url_pdf"]
-                + ligne["pdf_file"],
-                height=900
-            )
-        
+            pdf_url = (
+            ligne["url_pdf"]    
+        + ligne["pdf_file"])    
+    st.link_button("📄 Ouvrir le questionnaire", pdf_url)
+
 # -------------------
 # Dans l'onglet documentation
 # -------------------
