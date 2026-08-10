@@ -2,7 +2,7 @@
 #Description      :   PROGRAMME DE TEST : Développement en local de la page web pour sélection les variables 
 #                     à partir du fichier dicotionnaire des variables.
 #DATE OF CREATION :   06/08/2026							                                                                            
-#DATE OF UPDATE	  :   								                                                                              
+#DATE OF UPDATE	  :   10/08/2026								                                                                              
 # AUTHOR		  :   Roselyn Gomes					                                                                                 
 ################################################################################################################
 
@@ -20,7 +20,7 @@ import os
 
 def load_css():
 
-    with open("M:/02-Documents/03-Dico/APP/style.css") as f:
+    with open("Documents/APP/style.css") as f:
 
         st.markdown(
             f"<style>{f.read()}</style>",
@@ -38,7 +38,7 @@ st.write("""Le catalogue documentaire des variables et questionnaires généraux
 @st.cache_data
 def load_data():
     # Charger le fichier Excel
-    file_path = 'M:/02-Documents/03-Dico/APP/20250916_dicovar_reflexion_e3n.xlsx'
+    file_path = 'Documents/APP/20250916_dicovar_reflexion_e3n.xlsx'
     df = pd.read_excel(file_path, sheet_name='Dicovar')
     df.reset_index(inplace=True)
     df.rename(columns={"index": "ID"}, inplace=True)
@@ -49,7 +49,7 @@ df = load_data()
 @st.cache_data
 def load_questionnaires():
     try:
-        return pd.read_excel('M:/02-Documents/03-Dico/APP/20250916_dicovar_reflexion_e3n.xlsx', sheet_name='questionnaire')
+        return pd.read_excel('Documents/APP/20250916_dicovar_reflexion_e3n.xlsx', sheet_name='questionnaire')
     except:
         return pd.DataFrame()
     
@@ -86,7 +86,7 @@ with accueil:
             Les membres d’une même famille ont en commun des gènes, des habitudes et des lieux de vie. Cette vaste communauté de familles est un outil de recherche puissant pour démêler ce qui, dans notre santé, relève de la génétique, du mode de vie ou de l’environnement.""")
 
     st.image(
-            "M:/02-Documents/03-Dico/APP/images/Schema_E3N-Generations_20250613.png",
+            "Documents/APP/images/Schema_E3N-Generations_20250613.png",
             width=500
         )
     st.header('Les données épidémiologiques recueillies')
@@ -95,7 +95,7 @@ with accueil:
     st.info("""Calendrier de suivi des volontaires de la cohorte E3N-Générations""")
 
     st.image(
-            "M:/02-Documents/03-Dico/APP/images/Calendrier_E3N_Generations_202606.png",
+            "Documents/APP/images/Calendrier_E3N_Generations_202606.png",
             use_container_width=True
         )
  
