@@ -341,16 +341,13 @@ with questionnaires:
 
     with col2:
 
-        if pd.notna(ligne["pdf_file"]):
+        if pd.notna(ligne["url_pdf"]):
 
-            pdf_path = os.path.join(
-                "pdf",
-                str(ligne["pdf_file"])
+            st.components.v1.iframe(
+                ligne["url_pdf"],
+                height=900
             )
-
-            afficher_pdf(pdf_path)
         
-
 # -------------------
 # Dans l'onglet documentation
 # -------------------
