@@ -345,7 +345,7 @@ with questionnaires:
 
             st.components.v1.iframe(
                 ligne["url_pdf"]
-                ++ ligne["pdf_file"],
+                + ligne["pdf_file"],
                 height=900
             )
         
