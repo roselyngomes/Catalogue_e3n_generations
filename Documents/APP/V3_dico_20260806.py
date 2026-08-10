@@ -257,7 +257,7 @@ with questionnaires:
 
     generations = qdf["generation"].dropna().unique()
     generation_select = st.radio(
-                "Génération",
+                "Par génération",
                 generations,
                 horizontal=True
                 )
