@@ -33,7 +33,7 @@ st.set_page_config(page_title='E3N Générations', layout='wide')
 load_css()
 
 st.title('Catalogue E3N-Générations')
-st.write("""Le catalogue documentaire des variables et questionnaires généraux E3N-Générations.""")
+st.write("""Le catalogue documentaire des variables et questionnaires généraux de la cohorte E3N-Générations.""")
 
 @st.cache_data
 def load_data():
