@@ -37,7 +37,7 @@ col1, col2 = st.columns([1, 6])
 with col1:
     st.markdown("<div style='margin-top:30px'></div>",
                 unsafe_allow_html=True)
-    st.image("Documents/APP/images/e3n-generations-logo.png", width=100)
+    st.image("Documents/APP/images/e3n-generations-logo.png", width=150)
 with col2:
     st.title("Catalogue E3N-Générations")
     
