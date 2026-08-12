@@ -82,8 +82,8 @@ if 'selected_ids' not in st.session_state:
 accueil, questionnaires, variables, documentation = st.tabs([
     '🏠 E3N-Générations',
     '📄 Questionnaires',
-    '📚 Variables',
-    '📂 Documentation'
+    '📂 Documentation',
+    '📚 Variables'
 ])
 
 
