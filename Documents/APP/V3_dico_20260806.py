@@ -32,8 +32,16 @@ st.set_page_config(page_title='E3N Générations', layout='wide')
 
 load_css()
 
-st.title('Catalogue E3N-Générations')
-st.write("""Le catalogue documentaire des variables et questionnaires généraux de la cohorte E3N-Générations.""")
+col1, col2 = st.columns([1, 6])
+
+with col1:
+    st.markdown("<div style='margin-top:30px'></div>",
+                unsafe_allow_html=True)
+    st.image("Documents/APP/images/e3n-generations-logo.png", width=100)
+with col2:
+    st.title("Catalogue E3N-Générations")
+    
+    st.write("""Le catalogue documentaire des variables et questionnaires généraux de la cohorte E3N-Générations.""")
 
 @st.cache_data
 def load_data():
