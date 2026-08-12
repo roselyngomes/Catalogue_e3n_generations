@@ -39,7 +39,7 @@ with col1:
                 unsafe_allow_html=True)
     st.image("Documents/APP/images/e3n-generations-logo.png", width=150)
 with col2:
-    st.title("Catalogue E3N-Générations")
+    st.title("Catalogue de données E3N-Générations")
     
     st.write("""Le catalogue documentaire des variables et questionnaires généraux de la cohorte E3N-Générations.""")
 
