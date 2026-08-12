@@ -2,7 +2,7 @@
 #Description      :   PROGRAMME DE TEST : Développement en local de la page web pour sélection les variables 
 #                     à partir du fichier dicotionnaire des variables.
 #DATE OF CREATION :   06/08/2026							                                                                            
-#DATE OF UPDATE	  :   10/08/2026								                                                                              
+#DATE OF UPDATE	  :   12/08/2026								                                                                              
 # AUTHOR		  :   Roselyn Gomes					                                                                                 
 ################################################################################################################
 
@@ -31,7 +31,10 @@ def load_css():
 st.set_page_config(page_title='E3N Générations', layout='wide')
 
 load_css()
-
+st.sidebar.image(
+    "images/logo_e3n.png",
+    width=180
+)
 st.title('Catalogue E3N-Générations')
 st.write("""Le catalogue documentaire des variables et questionnaires généraux de la cohorte E3N-Générations.""")
 
