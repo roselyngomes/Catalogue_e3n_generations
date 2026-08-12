@@ -79,7 +79,7 @@ if 'ID' not in df.columns:
 if 'selected_ids' not in st.session_state:
     st.session_state.selected_ids = set()
 
-accueil, questionnaires, variables, documentation = st.tabs([
+accueil, questionnaires, documentation,variables = st.tabs([
     '🏠 E3N-Générations',
     '📄 Questionnaires',
     '📂 Documentation',
