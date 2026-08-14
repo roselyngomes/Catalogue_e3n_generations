@@ -249,24 +249,24 @@ with variables:
         sep=";"
         ).encode("utf-8")
 
-if not project_name.strip():    
-    st.error(
-    "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
-    )
+    if not project_name.strip():    
+        st.error(
+        "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
+        )
 
-else:
-    st.download_button(
-        label="Télécharger en Excel",
-        data=buffer,
-        file_name=f"{project_name}_{today}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    st.download_button(
-        label="Télécharger en CSV",
-        data=csv,
-        file_name=f"{project_name}_{today}.csv",
-        mime="text/csv"
-    )
+    else:
+        st.download_button(
+            label="Télécharger en Excel",
+            data=buffer,
+            file_name=f"{project_name}_{today}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        st.download_button(
+            label="Télécharger en CSV",
+            data=csv,
+            file_name=f"{project_name}_{today}.csv",
+            mime="text/csv"
+        )
 # -------------------
 # Dans l'onglet questionnaires
 # -------------------
