@@ -253,6 +253,7 @@ with variables:
 
     csv = selected_df.to_csv(
         index=False
+        sep=";"
         ).encode("utf-8")
     
     st.download_button(
