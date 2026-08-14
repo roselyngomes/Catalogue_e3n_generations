@@ -252,7 +252,7 @@ with variables:
     )
 
     csv = selected_df.to_csv(
-        index=False
+        index=False,
         sep=";"
         ).encode("utf-8")
     
