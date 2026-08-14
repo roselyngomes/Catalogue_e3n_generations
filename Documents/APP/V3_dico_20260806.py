@@ -237,7 +237,6 @@ with variables:
     # -------------------
     today = datetime.date.today().strftime("%Y%m%d")
 
-if project_name.strip():
     # -------------------
     # Export en téléchargement direct
     # -------------------
@@ -245,6 +244,23 @@ if project_name.strip():
     selected_df.to_excel(buffer, index=False)
     buffer.seek(0)
 
+    csv = selected_df.to_csv(
+        index=False,
+        sep=";"
+        ).encode("utf-8")
+
+if not project_name.strip():
+    st.download_button(
+        label="Télécharger en Excel",
+        data=buffer,
+        file_name=f"{project_name}_{today}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    st.error(
+    "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
+    )
+
+else:
     st.download_button(
         label="Télécharger en Excel",
         data=buffer,
@@ -252,20 +268,23 @@ if project_name.strip():
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    csv = selected_df.to_csv(
-        index=False,
-        sep=";"
-        ).encode("utf-8")
-    
+
+if not project_name.strip():    
     st.download_button(
         label="Télécharger en CSV",
         data=csv,
         file_name=f"{project_name}_{today}.csv",
         mime="text/csv"
     )
+        st.error(
+    "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
+    )
 else:
-    st.warning(
-    "Veuillez saisir un acronyme du projet_votre nom avant le téléchargement."
+    st.download_button(
+        label="Télécharger en CSV",
+        data=csv,
+        file_name=f"{project_name}_{today}.csv",
+        mime="text/csv"
     )
 # -------------------
 # Dans l'onglet questionnaires
