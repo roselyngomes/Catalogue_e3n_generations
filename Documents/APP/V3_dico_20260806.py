@@ -249,10 +249,11 @@ with variables:
         sep=";"
         ).encode("utf-8")
 
-if st.button("Préparer le téléchargement"):
-    st.warning(
-    "⚠️ Le nom du projet est obligatoire."
-)
+if not project_name.strip():    
+    st.error(
+    "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
+    )
+
 else:
     st.download_button(
         label="Télécharger en Excel",
@@ -260,17 +261,6 @@ else:
         file_name=f"{project_name}_{today}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-if not project_name.strip():    
-    st.download_button(
-        label="Télécharger en CSV",
-        data=csv,
-        file_name=f"{project_name}_{today}.csv",
-        mime="text/csv"
-    )
-    st.error(
-    "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
-    )
-else:
     st.download_button(
         label="Télécharger en CSV",
         data=csv,
