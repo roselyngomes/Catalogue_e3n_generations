@@ -272,6 +272,7 @@ with questionnaires:
                 "Par génération",
                 generations,
                 horizontal=True
+                format_func=lambda x: generation_labels.get(x, x)
                 )
 
     qdf_filtre = qdf[
