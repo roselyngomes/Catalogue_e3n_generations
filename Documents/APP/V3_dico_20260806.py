@@ -271,7 +271,7 @@ with questionnaires:
     generation_select = st.radio(
                 "Par génération",
                 generations,
-                horizontal=True
+                horizontal=True,
                 format_func=lambda x: generation_labels.get(x, x)
                 )
 
