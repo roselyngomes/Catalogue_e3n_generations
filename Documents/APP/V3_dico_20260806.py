@@ -276,7 +276,7 @@ if not project_name.strip():
         file_name=f"{project_name}_{today}.csv",
         mime="text/csv"
     )
-        st.error(
+    st.error(
     "⚠️ Veuillez renseigner un acronyme du projet_votre nom avant le téléchargement."
     )
 else:
