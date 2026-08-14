@@ -250,6 +250,11 @@ with variables:
         file_name=f"{project_name}_{today}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+    csv = vars_q.to_csv(
+        index=False
+        ).encode("utf-8")
+    
     st.download_button(
         label="Télécharger en CSV",
         data=csv,
