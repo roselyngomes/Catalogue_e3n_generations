@@ -234,12 +234,12 @@ with variables:
     # Demande du nom de projet #  
     project_name = st.text_input("Merci d'indiquer un acronyme du projet_votre nom :", value="")
     # -------------------
+    today = datetime.date.today().strftime("%Y%m%d")
 
-
+if project_name.strip():
     # -------------------
     # Export en téléchargement direct
     # -------------------
-    today = datetime.date.today().strftime("%Y%m%d")
     buffer = io.BytesIO()
     selected_df.to_excel(buffer, index=False)
     buffer.seek(0)
@@ -261,6 +261,10 @@ with variables:
         data=csv,
         file_name=f"{project_name}_{today}.csv",
         mime="text/csv"
+    )
+else:
+    st.warning(
+    "Veuillez saisir un acronyme du projet_votre nom avant le téléchargement."
     )
 # -------------------
 # Dans l'onglet questionnaires
