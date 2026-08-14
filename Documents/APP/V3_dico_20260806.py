@@ -262,7 +262,11 @@ with questionnaires:
     # ====================================
     # Filtre génération
     # ====================================
-
+    generation_labels = {
+        "G1F": "G1-Femmes (G1F)",
+        "G1H": "G1-Hommes (G1H)"
+    }
+    
     generations = qdf["generation"].dropna().unique()
     generation_select = st.radio(
                 "Par génération",
