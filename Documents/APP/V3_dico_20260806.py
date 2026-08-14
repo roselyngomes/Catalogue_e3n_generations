@@ -232,7 +232,7 @@ with variables:
     # -------------------
 
     # Demande du nom de projet #  
-    project_name = st.text_input("Merci d'indiquer le nom du projet :", value="")
+    project_name = st.text_input("Merci d'indiquer un acronyme du projet_votre nom :", value="")
     # -------------------
 
 
@@ -250,7 +250,12 @@ with variables:
         file_name=f"{project_name}_{today}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
+    st.download_button(
+        label="Télécharger en CSV",
+        data=csv,
+        file_name=f"{project_name}_{today}.csv",
+        mime="text/csv"
+    )
 # -------------------
 # Dans l'onglet questionnaires
 # -------------------
@@ -291,9 +296,7 @@ with questionnaires:
 
 
         st.info("""
-        Cette frise présente l'ensemble des questionnaires
-        adressés aux femmes de la génération G1 depuis
-        l'inclusion de la cohorte E3N.
+        Cette frise présente l'ensemble des questionnaires papier adressés aux femmes de la génération G1 depuis leur inclusion dans la cohorte E3N.
         """)
         
         st.image(
@@ -313,10 +316,8 @@ with questionnaires:
 
 
         st.info("""
-        Cette frise présente l'ensemble des questionnaires
-        adressés aux  pères des enfants des femmes E3N, 
+        Cette frise présente l'ensemble des questionnaires papier adressés aux pères des enfants des femmes E3N, 
         qui forment avec elles la première génération de la cohorte E3N-Générations, 
-        sont suivis grâce à des questionnaires papier.
         """)
         
         st.image(
