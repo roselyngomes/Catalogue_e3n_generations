@@ -230,6 +230,7 @@ with variables:
         st.write("Aucune variable sélectionnée.")
 
     # -------------------
+    st.subheader("Téléchargement")
 
     # Demande du nom de projet #  
     project_name = st.text_input("Merci d'indiquer un acronyme du projet_votre nom :", value="")
