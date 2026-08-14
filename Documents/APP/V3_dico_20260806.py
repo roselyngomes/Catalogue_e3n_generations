@@ -251,7 +251,7 @@ with variables:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    csv = vars_q.to_csv(
+    csv = selected_df.to_csv(
         index=False
         ).encode("utf-8")
     
