@@ -51,8 +51,7 @@ jobs:
 
     env:
       # URL par defaut. L'entree manuelle, si elle est renseignee, la remplace.
-      APP_URL: ${{ inputs.url != '' && inputs.url || 'https://cataloguee3ngenerations.streamlit.app/' }}
-
+      APP_URL: https://cataloguee3ngenerations.streamlit.app/
     steps:
       # --- Etape 1 : recuperer le code du depot sur la machine virtuelle ---
       - name: Recuperer le depot
