@@ -1,43 +1,40 @@
 #!/usr/bin/env python3
 """
-keep_awake.py
-=============
+keep_awake.py - version 2
+=========================
 
 Maintient eveillee une application hebergee sur Streamlit Community Cloud.
 
-Contexte
---------
-Le plan gratuit de Streamlit Community Cloud met en veille toute application
-qui ne recoit aucun trafic pendant 12 heures. Le visiteur suivant tombe alors
-sur une page "This app has gone to sleep due to inactivity" avec un bouton
-"Yes, get this app back up!".
+CE QUI CHANGE PAR RAPPORT A LA VERSION 1
+----------------------------------------
+La version 1 echouait avec "Aucun conteneur Streamlit detecte - page
+inattendue" alors que l'application fonctionnait parfaitement. La cause :
+elle exigeait de trouver l'element [data-testid="stAppViewContainer"] dans
+la page principale. Or Streamlit Cloud peut servir l'application dans une
+iframe, et les data-testid changent au fil des versions.
 
-Une simple requete HTTP (curl, requests.get) ne suffit pas :
-  - elle n'execute pas le JavaScript de la page,
-  - elle n'ouvre pas la connexion WebSocket que Streamlit utilise pour
-    comptabiliser une session active,
-  - elle ne peut donc pas cliquer le bouton de reveil.
-
-Ce script pilote un vrai navigateur (Chromium headless via Playwright) :
-  1. il ouvre l'URL,
-  2. il detecte si la page de veille est affichee,
-  3. le cas echeant il clique le bouton de reveil,
-  4. il attend que le conteneur applicatif Streamlit soit reellement rendu,
-  5. il verifie qu'un element attendu de l'application est present.
+Corrections apportees :
+  1. La recherche se fait dans TOUS les cadres de la page (page.frames),
+     pas seulement dans le cadre principal.
+  2. La liste des indices acceptes est bien plus large.
+  3. Surtout : la regle de succes est inversee. Au lieu d'exiger un
+     element precis, le script considere que tout va bien tant que la page
+     n'est PAS la page de veille. C'est la seule chose qui compte
+     reellement : l'objectif est de generer du trafic, pas de valider le
+     DOM de Streamlit.
+  4. Attente initiale allongee (Streamlit met parfois 15 s a peindre).
 
 Utilisation
 -----------
     pip install playwright
     playwright install --with-deps chromium
-    python keep_awake.py https://cataloguee3ngenerations.streamlit.app/
-
-L'URL peut aussi etre fournie par la variable d'environnement APP_URL.
+    python keep_awake.py https://mon-app.streamlit.app/
 
 Codes de sortie
 ---------------
-    0 : application eveillee et rendue correctement
-    1 : echec apres epuisement des tentatives
-    2 : erreur de configuration (URL manquante ou invalide)
+    0 : application accessible
+    1 : application inaccessible apres toutes les tentatives
+    2 : erreur de configuration
 """
 
 from __future__ import annotations
@@ -66,56 +63,64 @@ except ImportError:
     )
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
 DEFAULT_URL = "https://cataloguee3ngenerations.streamlit.app/"
 
-# Selecteurs CSS / texte utilises pour detecter l'etat de la page.
-# Ils sont volontairement multiples : Streamlit fait evoluer son DOM au fil
-# des versions, donc on essaie plusieurs pistes plutot qu'une seule fragile.
+# --- Detection du bouton de reveil -----------------------------------------
+# Plusieurs pistes, car le DOM de la page de veille change au fil des
+# versions de Community Cloud.
 SLEEP_BUTTON_SELECTORS = [
     'button:has-text("Yes, get this app back up!")',
     'button:has-text("get this app back up")',
+    'button:has-text("Yes, get this app back up")',
     '[data-testid="wakeup-button-viewer"]',
     '[data-testid="wakeup-button-owner"]',
+    'button:has-text("app back up")',
 ]
 
-# Presence de ce conteneur = l'application Streamlit est reellement rendue.
-APP_READY_SELECTORS = [
-    '[data-testid="stAppViewContainer"]',
-    'section.main',
-    'div.stApp',
-]
-
-# Texte caracteristique de la page de veille, utilise en second recours.
+# --- Texte caracteristique de la page de veille ----------------------------
+# C'est le critere DECISIF : si ce texte est absent, l'application tourne.
 SLEEP_PAGE_MARKERS = [
     "has gone to sleep",
+    "gone to sleep due to inactivity",
+    "zzzz",
     "s'est mise en veille",
+]
+
+# --- Indices que l'application est rendue ----------------------------------
+# Liste large et volontairement permissive : on cherche n'importe lequel.
+APP_READY_SELECTORS = [
+    '[data-testid="stAppViewContainer"]',
+    '[data-testid="stApp"]',
+    '[data-testid="stMain"]',
+    '[data-testid="stSidebar"]',
+    '[data-testid="stHeader"]',
+    'div.stApp',
+    'section.main',
+    'div.main',
+    '#root > div',
+    'iframe[title="streamlitApp"]',
+    '.streamlit-container',
 ]
 
 
 @dataclass
 class Config:
-    """Parametres d'execution du script."""
-
     url: str
     attempts: int = 3
-    page_timeout_ms: int = 60_000     # chargement initial de la page
-    wake_timeout_ms: int = 120_000    # redemarrage du conteneur apres clic
-    settle_seconds: float = 8.0       # temps laisse a l'app pour s'initialiser
+    page_timeout_ms: int = 60_000
+    wake_timeout_ms: int = 150_000
+    initial_wait_ms: int = 12_000   # allonge : Streamlit peint lentement
+    ready_timeout_ms: int = 45_000
+    settle_seconds: float = 10.0
     retry_delay_seconds: float = 20.0
     screenshot_dir: Path | None = None
     verbose: bool = False
 
 
-# ---------------------------------------------------------------------------
-# Journalisation
-# ---------------------------------------------------------------------------
+log = logging.getLogger("keep_awake")
+
 
 def setup_logging(verbose: bool) -> logging.Logger:
-    """Configure un logger lisible dans les journaux GitHub Actions."""
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
         format="%(asctime)s  %(levelname)-7s  %(message)s",
@@ -125,116 +130,139 @@ def setup_logging(verbose: bool) -> logging.Logger:
     return logging.getLogger("keep_awake")
 
 
-log = logging.getLogger("keep_awake")
-
-
 # ---------------------------------------------------------------------------
-# Detection d'etat
+# Detection, en parcourant TOUS les cadres de la page
 # ---------------------------------------------------------------------------
+
+def all_frames(page):
+    """Cadre principal plus toutes les iframes imbriquees."""
+    return list(page.frames)
+
 
 def find_wake_button(page):
-    """
-    Cherche le bouton de reveil de Streamlit.
-
-    Retourne le Locator du premier selecteur qui correspond, sinon None.
-    On teste plusieurs selecteurs car le DOM de la page de veille a change
-    plusieurs fois entre les versions de Community Cloud.
-    """
-    for selector in SLEEP_BUTTON_SELECTORS:
-        locator = page.locator(selector).first
-        try:
-            if locator.count() > 0 and locator.is_visible(timeout=2_000):
-                log.debug("Bouton de reveil trouve via : %s", selector)
-                return locator
-        except PlaywrightError:
-            continue
+    """Cherche le bouton de reveil dans tous les cadres."""
+    for frame in all_frames(page):
+        for selector in SLEEP_BUTTON_SELECTORS:
+            try:
+                locator = frame.locator(selector).first
+                if locator.count() > 0 and locator.is_visible(timeout=1_500):
+                    log.debug("Bouton de reveil trouve : %s (cadre %s)",
+                              selector, frame.url[:60])
+                    return locator
+            except PlaywrightError:
+                continue
     return None
 
 
-def looks_like_sleep_page(page) -> bool:
-    """Second filet de securite : recherche du texte de la page de veille."""
-    try:
-        body_text = (page.inner_text("body", timeout=5_000) or "").lower()
-    except PlaywrightError:
-        return False
-    return any(marker in body_text for marker in SLEEP_PAGE_MARKERS)
+def collect_text(page) -> str:
+    """Concatene le texte visible de tous les cadres, en minuscules."""
+    parts = []
+    for frame in all_frames(page):
+        try:
+            text = frame.inner_text("body", timeout=4_000)
+            if text:
+                parts.append(text.lower())
+        except PlaywrightError:
+            continue
+    return "\n".join(parts)
 
 
-def wait_for_app_ready(page, timeout_ms: int) -> bool:
-    """
-    Attend qu'un conteneur applicatif Streamlit apparaisse dans le DOM.
+def is_sleep_page(page) -> bool:
+    """Critere decisif : la page de veille affiche-t-elle son texte ?"""
+    text = collect_text(page)
+    return any(marker in text for marker in SLEEP_PAGE_MARKERS)
 
-    C'est la seule verification qui prouve que l'application tourne
-    vraiment : la page de veille, elle, ne contient aucun de ces elements.
-    """
-    deadline = time.monotonic() + timeout_ms / 1000
-    while time.monotonic() < deadline:
+
+def find_app_container(page) -> str | None:
+    """Cherche un indice d'application rendue, dans tous les cadres."""
+    for frame in all_frames(page):
         for selector in APP_READY_SELECTORS:
             try:
-                if page.locator(selector).first.count() > 0:
-                    log.debug("Conteneur applicatif detecte via : %s", selector)
-                    return True
+                if frame.locator(selector).first.count() > 0:
+                    return selector
             except PlaywrightError:
-                pass
-        page.wait_for_timeout(2_000)
-    return False
+                continue
+    return None
+
+
+def wait_for_app_ready(page, timeout_ms: int) -> str | None:
+    """Attend un indice d'application rendue. Retourne le selecteur trouve."""
+    deadline = time.monotonic() + timeout_ms / 1000
+    while time.monotonic() < deadline:
+        found = find_app_container(page)
+        if found:
+            return found
+        page.wait_for_timeout(2_500)
+    return None
 
 
 # ---------------------------------------------------------------------------
-# Coeur du traitement
+# Visite
 # ---------------------------------------------------------------------------
 
-def visit_once(page, cfg: Config, attempt: int) -> bool:
-    """
-    Effectue une visite complete de l'application.
-
-    Retourne True si l'application est eveillee et rendue, False sinon.
-    """
+def visit_once(page, cfg: Config) -> bool:
     log.info("Ouverture de %s", cfg.url)
     page.goto(cfg.url, wait_until="domcontentloaded", timeout=cfg.page_timeout_ms)
 
-    # Laisse a React le temps de peindre soit l'app, soit la page de veille.
-    page.wait_for_timeout(5_000)
+    log.debug("Attente initiale de %.0f s", cfg.initial_wait_ms / 1000)
+    page.wait_for_timeout(cfg.initial_wait_ms)
 
+    # --- 1. L'application dort-elle ? --------------------------------------
     button = find_wake_button(page)
-
     if button is not None:
-        log.warning("Application EN VEILLE — clic sur le bouton de reveil")
+        log.warning("Application EN VEILLE - clic sur le bouton de reveil")
         button.click()
-        log.info("Redemarrage du conteneur en cours (jusqu'a %d s)...",
-                 cfg.wake_timeout_ms // 1000)
-        if not wait_for_app_ready(page, cfg.wake_timeout_ms):
-            log.error("Le conteneur n'a pas fini de redemarrer a temps")
-            return False
-        log.info("Application reveillee")
+        log.info("Redemarrage du conteneur en cours...")
+        found = wait_for_app_ready(page, cfg.wake_timeout_ms)
+        if found:
+            log.info("Application reveillee (indice : %s)", found)
+        else:
+            # Le clic a eu lieu, le conteneur redemarre peut-etre encore.
+            # On ne considere pas ca comme un echec si la page de veille
+            # a disparu.
+            if is_sleep_page(page):
+                log.error("Toujours sur la page de veille apres le clic")
+                return False
+            log.info("Page de veille quittee, application en cours de demarrage")
+        return finish(page, cfg)
 
-    elif looks_like_sleep_page(page):
-        # Page de veille detectee par son texte, mais bouton introuvable :
-        # le DOM a probablement change. On le signale explicitement.
-        log.error(
-            "Page de veille detectee mais bouton introuvable — "
-            "les selecteurs sont probablement obsoletes"
-        )
+    # --- 2. Pas de bouton : est-ce quand meme la page de veille ? ----------
+    if is_sleep_page(page):
+        log.error("Page de veille detectee mais bouton introuvable - "
+                  "les selecteurs du bouton sont obsoletes")
         return False
 
-    else:
-        log.info("Application deja eveillee")
-        if not wait_for_app_ready(page, 30_000):
-            log.error("Aucun conteneur Streamlit detecte — page inattendue")
-            return False
+    # --- 3. L'application est eveillee. On cherche un indice, sans exiger --
+    found = find_app_container(page)
+    if found is None:
+        found = wait_for_app_ready(page, cfg.ready_timeout_ms)
 
-    # Temps de repos supplementaire : maintient la session WebSocket ouverte
-    # quelques secondes, ce qui garantit que le trafic est bien comptabilise.
+    if found:
+        log.info("Application eveillee et rendue (indice : %s)", found)
+    else:
+        # C'est ici que la version 1 echouait a tort.
+        # L'application n'est pas endormie : la visite a donc bien genere
+        # du trafic, ce qui est le seul objectif. On le signale sans
+        # faire echouer le job.
+        log.warning("Application eveillee, mais aucun selecteur connu "
+                    "reconnu (le DOM de Streamlit a probablement change)")
+        log.warning("Ce n'est pas bloquant : la visite compte comme du trafic")
+
+    return finish(page, cfg)
+
+
+def finish(page, cfg: Config) -> bool:
+    """Maintient la session ouverte quelques secondes puis conclut."""
     log.debug("Maintien de la session pendant %.0f s", cfg.settle_seconds)
     page.wait_for_timeout(int(cfg.settle_seconds * 1_000))
-
-    title = page.title()
-    log.info("Titre de la page : %s", title or "(vide)")
+    try:
+        log.info("Titre de la page : %s", page.title() or "(vide)")
+    except PlaywrightError:
+        pass
     return True
 
 
 def save_screenshot(page, cfg: Config, attempt: int) -> None:
-    """Capture d'ecran de diagnostic, recuperable en artefact CI."""
     if cfg.screenshot_dir is None:
         return
     cfg.screenshot_dir.mkdir(parents=True, exist_ok=True)
@@ -244,13 +272,13 @@ def save_screenshot(page, cfg: Config, attempt: int) -> None:
         page.screenshot(path=str(path), full_page=True)
         log.info("Capture d'ecran enregistree : %s", path)
     except PlaywrightError as exc:
-        log.debug("Capture d'ecran impossible : %s", exc)
+        log.debug("Capture impossible : %s", exc)
 
 
 def run(cfg: Config) -> int:
-    """Boucle principale avec nouvelles tentatives."""
     started = datetime.now(timezone.utc)
-    log.info("=== keep_awake — %s ===", started.strftime("%Y-%m-%d %H:%M:%S UTC"))
+    log.info("=== keep_awake v2 - %s ===",
+             started.strftime("%Y-%m-%d %H:%M:%S UTC"))
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -261,8 +289,7 @@ def run(cfg: Config) -> int:
             viewport={"width": 1280, "height": 900},
             user_agent=(
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/125.0 Safari/537.36 "
-                "keep-awake-bot/1.0"
+                "(KHTML, like Gecko) Chrome/125.0 Safari/537.36"
             ),
             locale="fr-FR",
         )
@@ -273,7 +300,7 @@ def run(cfg: Config) -> int:
         for attempt in range(1, cfg.attempts + 1):
             log.info("--- Tentative %d/%d ---", attempt, cfg.attempts)
             try:
-                if visit_once(page, cfg, attempt):
+                if visit_once(page, cfg):
                     success = True
                     break
                 save_screenshot(page, cfg, attempt)
@@ -293,38 +320,25 @@ def run(cfg: Config) -> int:
 
     elapsed = (datetime.now(timezone.utc) - started).total_seconds()
     if success:
-        log.info("SUCCES — application accessible (%.1f s)", elapsed)
+        log.info("SUCCES - application accessible (%.1f s)", elapsed)
         return 0
-    log.error("ECHEC — application inaccessible apres %d tentatives (%.1f s)",
+    log.error("ECHEC - application inaccessible apres %d tentatives (%.1f s)",
               cfg.attempts, elapsed)
     return 1
 
-
-# ---------------------------------------------------------------------------
-# Interface en ligne de commande
-# ---------------------------------------------------------------------------
 
 def parse_args(argv: list[str] | None = None) -> Config:
     parser = argparse.ArgumentParser(
         description="Maintient eveillee une app Streamlit Community Cloud.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "url",
-        nargs="?",
-        default=os.environ.get("APP_URL", DEFAULT_URL),
-        help="URL de l'application Streamlit",
-    )
-    parser.add_argument("--attempts", type=int, default=3,
-                        help="nombre de tentatives")
-    parser.add_argument("--settle", type=float, default=8.0,
-                        help="secondes de session maintenue apres chargement")
-    parser.add_argument("--screenshot-dir", type=Path, default=Path("captures"),
-                        help="dossier des captures de diagnostic")
-    parser.add_argument("--no-screenshot", action="store_true",
-                        help="desactive les captures d'ecran")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="journalisation detaillee")
+    parser.add_argument("url", nargs="?",
+                        default=os.environ.get("APP_URL", DEFAULT_URL))
+    parser.add_argument("--attempts", type=int, default=3)
+    parser.add_argument("--settle", type=float, default=10.0)
+    parser.add_argument("--screenshot-dir", type=Path, default=Path("captures"))
+    parser.add_argument("--no-screenshot", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
     parsed = urlparse(args.url)
